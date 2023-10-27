@@ -3,11 +3,18 @@
 using poker::TexasHoldem;
 
 TexasHoldem::TexasHoldem(int ac, char **av) {
+    // set all bits to 1 except 8 first bits
+    this->_deck.set();
+    for (std::size_t i = 0; i < 8; i++)
+        this->_deck.reset(i);
+
     this->_handleArguments(ac, av);
 }
-TexasHoldem::~TexasHoldem() {}
+TexasHoldem::~TexasHoldem() {
+}
 
 void TexasHoldem::_usage() {
+    std::cout << "EDIT USAGE" << std::endl;
 }
 
 poker::Card TexasHoldem::_readCard(char rank, char suit) {
@@ -16,35 +23,40 @@ poker::Card TexasHoldem::_readCard(char rank, char suit) {
     return Card(rank, suit);
 }
 
-std::vector<poker::Card> TexasHoldem::_parseBoard(std::string str) {
+void TexasHoldem::_parseBoard(std::string str) {
     // number of characters must be 6 or 8 or 10 (flop/turn/river)
     if (str.size() != 6 && str.size() != 8 && str.size() != 10)
         throw std::runtime_error("Board must have either 3, 4 or 5 cards.");
 
-    std::vector<poker::Card> cards;
+    for (std::size_t i = 0; i < str.size(); i += 2) {
+        Card card(this->_readCard(str[i], str[i + 1]));
 
-    for (std::size_t i = 0; i < str.size(); i += 2)
-        cards.push_back(this->_readCard(str[i], str[i + 1]));
-
-    for (const auto &i: cards)
-        if (!(this->_deck.get()->removeCard(i.getRank(), i.getSuit())))
+        if (this->_deck[(card.getRank() * 4) + card.getSuit()] == 0)
             throw std::runtime_error("Card already distributed.");
-    return cards;
+        this->_deck.reset((card.getRank() * 4) + card.getSuit());
+        this->_board.set((card.getRank() * 4) + card.getSuit());
+    }
 }
 
 Player TexasHoldem::_parsePlayer(std::string str) {
+    Player player(std::string("p" + std::to_string(this->_players.size() + 1)));
+
     // number of characters must be 4 (2 cards)
     if (str.size() != 4)
         throw std::runtime_error("A player must have 2 cards.");
 
-    std::vector<poker::Card> cards;
+    for (std::size_t i = 0; i < str.size(); i += 2) {
+        Card card(this->_readCard(str[i], str[i + 1]));
 
-    for (std::size_t i = 0; i < str.size(); i += 2)
-        cards.push_back(this->_readCard(str[i], str[i + 1]));
-    for (const auto &i: cards)
-        if (!(this->_deck.get()->removeCard(i.getRank(), i.getSuit())))
+        if (this->_deck[(card.getRank() * 4) + card.getSuit()] == 0)
             throw std::runtime_error("Card already distributed.");
-    return Player(std::string("p" + std::to_string(this->_players.size() + 1)), cards);
+        this->_deck.reset((card.getRank() * 4) + card.getSuit());
+        player.addCard(card);
+    }
+
+    // add board cards to the player
+    player.addBoard(this->_board);
+    return player;
 }
 
 void TexasHoldem::_handleArguments(int ac, char **av) {
@@ -63,10 +75,10 @@ void TexasHoldem::_handleArguments(int ac, char **av) {
         } else if (compare("--board", args[i]) || compare("-b", args[i])) {
             // case when --board was already given
             // first occurence has the priority
-            if (this->_board.size() > 0) continue;
+            if (this->_board.count() > 0) continue;
 
             if (i + 1 < args.size())
-                this->_board = this->_parseBoard(args[i + 1]);
+                this->_parseBoard(args[i + 1]);
             else
                 throw std::runtime_error("Not enough arguments. Try --help or -h.");
 
@@ -84,129 +96,66 @@ void TexasHoldem::_handleArguments(int ac, char **av) {
             throw std::runtime_error("Not enough arguments. Try --help or -h.");
         }
     }
-
-    // when all cards are distributed, shuffle deck
-    this->_deck.get()->shuffle();
-}
-
-void TexasHoldem::addPlayer(std::string name, std::vector<Card> hand) {
-    if (!this->_deck->removeCard(hand.at(0).getRank(), hand.at(0).getSuit()))
-        throw std::runtime_error("Duplicate card.");
-    if (!this->_deck->removeCard(hand.at(1).getRank(), hand.at(1).getSuit()))
-        throw std::runtime_error("Duplicate card.");
-    this->_players.push_back(Player(name, hand));
-}
-
-void TexasHoldem::addPlayersCard(Card card) {
-    for (auto &player: this->_players)
-        player.addCard(card);
-    this->sortPlayersHand();
 }
 
 void TexasHoldem::play() {
-    for (const auto &card: this->_board) {
-        this->addPlayersCard(card);
-    }
-    this->winner();
+    Player winner = this->winner();
 }
 
-void TexasHoldem::winner() {
-    for (const auto &player: this->_players) {
-        std::cout << player.getName() << " -> " << poker::HandRank().to_representation[this->getHandRanking(player)] << std::endl;
-    }
-}
+Player TexasHoldem::winner() {
+    Player winner;
+    std::bitset<60> best;
+    std::bitset<60> hand;
+    std::bitset<60> bits_hand;
+    std::bitset<60> bits_values;
+    std::bitset<15> bits_count;
+    std::vector<int> values;
+    int score = 0;
+    int max = -1;
 
-void TexasHoldem::sortPlayersHand() {
-    for (auto &player: this->_players)
-        player.sortHand();
-}
+    for (auto &player: this->_players) {
+        hand = player.getHand();
+        score = 0;
 
-poker::HandRank::Value TexasHoldem::getHandRanking(Player player) {
-    std::vector<Card> cards = player.getHand();
-    std::unordered_map<int, int> countRank = player.getRankCount();
-    std::unordered_map<int, int> countSuit = player.getSuitCount();
+        // get indexes of the player's cards
+        values.clear();
+        for (std::size_t i = 0; i < hand.size(); i++)
+            if (hand[i] == 1)
+                values.push_back(i);
 
-    for (const auto &card: cards) {
-        std::cout << card.to_symbol_representation() << ",";
-    }
-    for (const auto &[rank, count]: countRank) {
-        std::cout << poker::Rank().to_symbol_representation[static_cast<poker::Rank::Value>(rank)] << ":" << count << " ";
-    }
-    std::cout << std::endl;
-
-    bool hasPair = false;
-    bool hasTwoPair = false;
-    bool hasThreeOfAKind = false;
-    bool hasStraight = false;
-    bool hasFlush = false;
-    bool hasFullHouse = false;
-    bool hasStraightFlush = false;
-    bool hasRoyalFlush = false;
-    int pairNumber = 0;
-
-    // hand ranking happens only when the player has 7 cards (the hand + board ones)
-    if (this->_board.size() != 5)
-        throw std::runtime_error("Cannot determine who won with less than 5 cards in the board.");
-
-    // faire la straight pour les couleurs et la straight sans
-    for (std::size_t i = 0; i < cards.size(); i++) {
-        if (i + 5 > cards.size()) break;
-        if (
-            (cards[i].getRank() + 1) == cards[i + 1].getRank() && \
-            (cards[i + 1].getRank() + 1) == cards[i + 2].getRank() && \
-            (cards[i + 2].getRank() + 1) == cards[i + 3].getRank() && \
-            (cards[i + 3].getRank() + 1) == cards[i + 4].getRank()
-        ) {
-            if (
-                cards[i].getSuit() == cards[i + 1].getSuit() && \
-                cards[i + 1].getSuit() == cards[i + 2].getSuit() && \
-                cards[i + 2].getSuit() == cards[i + 3].getSuit() && \
-                cards[i + 3].getSuit() == cards[i + 4].getSuit()
-            ) {
-                if (cards[i].getRank() == poker::Rank::Ten)
-                    return poker::HandRank::RoyalFlush;
-                hasStraightFlush = true;
+        // get all combinations and save the best hand
+        for (const auto &combination: getCombinations(values, 5)) {
+            bits_hand.reset();
+            bits_count.reset();
+            bits_values.reset();
+            for (std::size_t i = 0; i < combination.size(); i++) {
+                pushRankToBitset(bits_hand, (combination[i] - (combination[i] % 4)) / 4);
+                pushRankToBitset(bits_count, (combination[i] - (combination[i] % 4)) / 4);
+                bits_values.set(combination[i]);
             }
-            hasStraight = true;
+
+            score = this->_hand_rank.scores[player.handScore(bits_hand, bits_values, bits_count) - 1];
+            if (player.getScore() <= score) {
+                player.setScore(score);
+                player.setBestHand(bits_values);
+            }
+        }
+
+        if (player.getScore() > max) {
+            max = player.getScore();
+            best = player.getBestHand();
+            winner = player;
+        } else if (player.getScore() == max) {
+            if (winner.tiesScore(winner.getBestHand()) < player.tiesScore(player.getBestHand())) {
+                winner = player;
+                best = player.getBestHand();
+            } else if (winner.tiesScore(winner.getBestHand()) > player.tiesScore(player.getBestHand())) {
+                continue;
+            } else {
+                std::cout << "tie" << std::endl;
+            }
         }
     }
 
-    // start by checking the more powerful to stop if true
-    // otherwise cannot stop if it starts from the less powerful
-
-    // check si la suite commence par 10
-    if (hasStraightFlush) return poker::HandRank::StraightFlush;
-
-    for (const auto &[rank, count]: countRank) {
-        if (count == 2) {
-            hasPair = true;
-            pairNumber += 1;
-        } else if (count == 3) {
-            hasThreeOfAKind = true;
-        } else if (count == 4) {
-            return poker::HandRank::FourOfAKind;
-        }
-    }
-
-    if (hasThreeOfAKind == true && pairNumber >= 1) {
-        return poker::HandRank::FullHouse;
-    }
-
-    for (const auto &[suit, count]: countSuit) {
-        if (count >= 5)
-            return poker::HandRank::Flush;
-    }
-
-    if (hasStraight == true)
-        return poker::HandRank::Straight;
-
-    if (hasThreeOfAKind == true && pairNumber <= 0) {
-        return poker::HandRank::ThreeOfAKind;
-    }
-
-    if (pairNumber >= 2)
-        return poker::HandRank::TwoPairs;
-    else if (pairNumber == 1)
-        return poker::HandRank::Pair;
-    return poker::HandRank::HighCard;
+    return winner;
 }

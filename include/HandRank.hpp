@@ -20,22 +20,31 @@ namespace poker {
                 RoyalFlush,
             };
 
-            std::unordered_map<Value, std::string> to_representation = {
-                {Value::HighCard, "High Card"},
-                {Value::Pair, "Pair"},
-                {Value::TwoPairs, "Two pairs"},
-                {Value::ThreeOfAKind, "Three of a Kind"},
-                {Value::Straight, "Straight"},
-                {Value::Flush, "Flush"},
-                {Value::FullHouse, "Full House"},
-                {Value::FourOfAKind, "Four of a Kind"},
-                {Value::StraightFlush, "Straight Flush"},
-                {Value::RoyalFlush, "Royal Flush"},
+            std::vector<std::string> to_representation = {
+                {"High Card"},
+                {"Pair"},
+                {"Two pairs"},
+                {"Three of a Kind"},
+                {"Straight"},
+                {"Flush"},
+                {"Full House"},
+                {"Four of a Kind"},
+                {"Straight Flush"},
+                {"Royal Flush"},
             };
 
-        private:
-            std::bitset<52> _duplicates;
-            std::bitset<13> _values;
+            std::vector<int> scores = {
+                7, // four of a kind
+                5, // flush
+                4, // straight
+                8, // straight flush
+                0, // high card
+                1, // one pair
+                2, // two pairs
+                9, // royal flush
+                3, // three of a kind
+                6 // full house
+            };
     };
 }
 
