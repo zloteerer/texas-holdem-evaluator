@@ -4,35 +4,25 @@
 #include <unordered_map>
 
 namespace poker {
-    class Suit {
-        public:
-            enum Value {
-                Hearts,
-                Diamonds,
-                Spades,
-                Clubs
-            };
+    static std::unordered_map<char, int> suit_letters = {
+        {'h', 0},
+        {'d', 1},
+        {'s', 2},
+        {'c', 3},
+    };
 
-            std::unordered_map<char, Value> letters = {
-                {'h', Value::Hearts},
-                {'d', Value::Diamonds},
-                {'s', Value::Spades},
-                {'c', Value::Clubs},
-            };
+    const static std::vector<std::string> suit_to_representation = {
+        {"Hearts"},
+        {"Diamonds"},
+        {"Spades"},
+        {"Clubs"},
+    };
 
-            std::unordered_map<Value, std::string> to_representation = {
-                {Value::Hearts, "Hearts"},
-                {Value::Diamonds, "Diamonds"},
-                {Value::Spades, "Spades"},
-                {Value::Clubs, "Clubs"},
-            };
-
-            std::unordered_map<Value, std::string> to_symbol_representation = {
-                {Value::Hearts, "♥"},
-                {Value::Diamonds, "♦"},
-                {Value::Spades, "♠"},
-                {Value::Clubs, "♣"},
-            };
+    const static std::vector<std::string> suit_to_symbol_representation = {
+        {"♥"},
+        {"♦"},
+        {"♠"},
+        {"♣"},
     };
 }
 

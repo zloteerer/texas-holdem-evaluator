@@ -8,7 +8,7 @@ TexasHoldem::TexasHoldem(int ac, char **av) {
     for (std::size_t i = 0; i < 8; i++)
         this->_deck.reset(i);
 
-    this->_handleArguments(ac, av);
+    this->_handle_arguments(ac, av);
 }
 TexasHoldem::~TexasHoldem() {
 }
@@ -17,28 +17,40 @@ void TexasHoldem::_usage() {
     std::cout << "EDIT USAGE" << std::endl;
 }
 
-poker::Card TexasHoldem::_readCard(char rank, char suit) {
-    if (Rank().letters.count(rank) <= 0 || Suit().letters.count(suit) <= 0)
+int TexasHoldem::_read_rank(char rank) {
+    if (poker::rank_letters.count(rank) <= 0)
         throw std::runtime_error("Bad card entry.");
-    return Card(rank, suit);
+    return poker::rank_letters[rank];
 }
 
-void TexasHoldem::_parseBoard(std::string str) {
+int TexasHoldem::_read_suit(char suit) {
+    if (poker::suit_letters.count(suit) <= 0)
+        throw std::runtime_error("Bad card entry.");
+    return poker::suit_letters[suit];
+}
+
+void TexasHoldem::_parse_board(std::string str) {
+    int rank = 0;
+    int suit = 0;
+
     // number of characters must be 6 or 8 or 10 (flop/turn/river)
     if (str.size() != 6 && str.size() != 8 && str.size() != 10)
         throw std::runtime_error("Board must have either 3, 4 or 5 cards.");
 
     for (std::size_t i = 0; i < str.size(); i += 2) {
-        Card card(this->_readCard(str[i], str[i + 1]));
+        rank = this->_read_rank(str[i]);
+        suit = this->_read_suit(str[i + 1]);
 
-        if (this->_deck[(card.getRank() * 4) + card.getSuit()] == 0)
+        if (this->_deck[(rank * 4) + suit] == 0)
             throw std::runtime_error("Card already distributed.");
-        this->_deck.reset((card.getRank() * 4) + card.getSuit());
-        this->_board.set((card.getRank() * 4) + card.getSuit());
+        this->_deck.reset((rank * 4) + suit);
+        this->_board.set((rank * 4) + suit);
     }
 }
 
-Player TexasHoldem::_parsePlayer(std::string str) {
+Player TexasHoldem::_parse_player(std::string str) {
+    int rank = 0;
+    int suit = 0;
     Player player(std::string("p" + std::to_string(this->_players.size() + 1)));
 
     // number of characters must be 4 (2 cards)
@@ -46,12 +58,13 @@ Player TexasHoldem::_parsePlayer(std::string str) {
         throw std::runtime_error("A player must have 2 cards.");
 
     for (std::size_t i = 0; i < str.size(); i += 2) {
-        Card card(this->_readCard(str[i], str[i + 1]));
+        rank = this->_read_rank(str[i]);
+        suit = this->_read_suit(str[i + 1]);
 
-        if (this->_deck[(card.getRank() * 4) + card.getSuit()] == 0)
+        if (this->_deck[(rank * 4) + suit] == 0)
             throw std::runtime_error("Card already distributed.");
-        this->_deck.reset((card.getRank() * 4) + card.getSuit());
-        player.addCard(card);
+        this->_deck.reset((rank * 4) + suit);
+        player.addCard(rank, suit);
     }
 
     // add board cards to the player
@@ -59,7 +72,7 @@ Player TexasHoldem::_parsePlayer(std::string str) {
     return player;
 }
 
-void TexasHoldem::_handleArguments(int ac, char **av) {
+void TexasHoldem::_handle_arguments(int ac, char **av) {
     std::vector<std::string> args;
 
     if (ac > 1) {
@@ -78,7 +91,7 @@ void TexasHoldem::_handleArguments(int ac, char **av) {
             if (this->_board.count() > 0) continue;
 
             if (i + 1 < args.size())
-                this->_parseBoard(args[i + 1]);
+                this->_parse_board(args[i + 1]);
             else
                 throw std::runtime_error("Not enough arguments. Try --help or -h.");
 
@@ -86,7 +99,7 @@ void TexasHoldem::_handleArguments(int ac, char **av) {
             i += 1;
         } else if (compare("--player", args[i]) || compare("-p", args[i])) {
             if (i + 1 < args.size())
-                this->_players.push_back(this->_parsePlayer(args[i + 1]));
+                this->_players.push_back(this->_parse_player(args[i + 1]));
             else
                 throw std::runtime_error("Not enough arguments. Try --help or -h.");
 
@@ -99,12 +112,24 @@ void TexasHoldem::_handleArguments(int ac, char **av) {
 }
 
 void TexasHoldem::play() {
-    Player winner = this->winner();
+    std::vector<Player> winner = this->winner();
+
+    if (winner.size() == 1) {
+        std::cout << winner.at(0).getName() << ": " << poker::hand_rank_to_representation[winner.at(0).getScore()] << std::endl;
+        print_bitset(winner.at(0).getBestHand());
+        print_player_hand(winner.at(0).getBestHand());
+    } else if (winner.size() > 1) {
+        std::cout << "Tie!" << std::endl;
+        for (const auto &player: winner) {
+            std::cout << player.getName() << ": " << poker::hand_rank_to_representation[winner.at(0).getScore()] << std::endl;
+            print_bitset(player.getBestHand());
+            print_player_hand(player.getBestHand());
+        }
+    }
 }
 
-Player TexasHoldem::winner() {
-    Player winner;
-    std::bitset<60> best;
+std::vector<Player> TexasHoldem::winner() {
+    std::vector<Player> winner;
     std::bitset<60> hand;
     std::bitset<60> bits_hand;
     std::bitset<60> bits_values;
@@ -134,7 +159,7 @@ Player TexasHoldem::winner() {
                 bits_values.set(combination[i]);
             }
 
-            score = this->_hand_rank.scores[player.handScore(bits_hand, bits_values, bits_count) - 1];
+            score = poker::hand_rank_scores[player.handScore(bits_hand, bits_values, bits_count) - 1];
             if (player.getScore() <= score) {
                 player.setScore(score);
                 player.setBestHand(bits_values);
@@ -143,16 +168,20 @@ Player TexasHoldem::winner() {
 
         if (player.getScore() > max) {
             max = player.getScore();
-            best = player.getBestHand();
-            winner = player;
+            if (winner.size() > 0) {
+                winner.clear();
+                winner.push_back(player);
+            } else {
+                winner.push_back(player);
+            }
         } else if (player.getScore() == max) {
-            if (winner.tiesScore(winner.getBestHand()) < player.tiesScore(player.getBestHand())) {
-                winner = player;
-                best = player.getBestHand();
-            } else if (winner.tiesScore(winner.getBestHand()) > player.tiesScore(player.getBestHand())) {
+            if (winner.at(0).tiesScore(winner.at(0).getBestHand()) < player.tiesScore(player.getBestHand())) {
+                winner.clear();
+                winner.push_back(player);
+            } else if (winner.at(0).tiesScore(winner.at(0).getBestHand()) > player.tiesScore(player.getBestHand())) {
                 continue;
             } else {
-                std::cout << "tie" << std::endl;
+                winner.push_back(player);
             }
         }
     }

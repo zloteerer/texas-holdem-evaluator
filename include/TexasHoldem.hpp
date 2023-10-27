@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "Player.hpp"
-#include "Deck.hpp"
 #include "HandRank.hpp"
 #include "String.hpp"
 #include "Utils.hpp"
@@ -16,13 +15,14 @@ namespace poker {
             TexasHoldem(int ac, char **av);
             ~TexasHoldem();
 
-            Player winner();
+            std::vector<Player> winner();
             void play();
         private:
-            void _parseBoard(std::string str);
-            Player _parsePlayer(std::string str);
-            Card _readCard(char rank, char suit);
-            void _handleArguments(int ac, char **av);
+            void _parse_board(std::string str);
+            Player _parse_player(std::string str);
+            int _read_rank(char rank);
+            int _read_suit(char suit);
+            void _handle_arguments(int ac, char **av);
             void _usage();
 
             std::vector<Player> _players;
@@ -30,7 +30,6 @@ namespace poker {
             std::bitset<60> _deck;
             std::bitset<60> _board;
             std::bitset<15> _board_values;
-            poker::HandRank _hand_rank;
     };
 }
 

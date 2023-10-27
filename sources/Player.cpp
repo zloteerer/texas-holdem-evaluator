@@ -17,12 +17,12 @@ Player::Player(const Player &copy) {
 
 Player::~Player() {}
 
-void Player::addCard(poker::Card card) {
-    if (this->_hand[(card.getRank() * 4) + card.getSuit()] == 1)
+void Player::addCard(int rank, int suit) {
+    if (this->_hand[(rank * 4) + suit] == 1)
         throw std::runtime_error("This player already have this card.");
-    this->_hand.set(card.getRank() * 4 + card.getSuit());
+    this->_hand.set(rank * 4 + suit);
 
-    pushRankToBitset(this->_hand_count, card.getRank());
+    pushRankToBitset(this->_hand_count, rank);
 }
 
 void Player::addBoard(std::bitset<60> bits) {

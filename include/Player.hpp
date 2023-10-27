@@ -5,7 +5,6 @@
 #include <string>
 #include <iostream>
 
-#include "Card.hpp"
 #include "Utils.hpp"
 
 class Player {
@@ -15,7 +14,7 @@ class Player {
         Player(const std::string &name);
         ~Player();
 
-        void addCard(poker::Card card);
+        void addCard(int rank, int suit);
         void addBoard(std::bitset<60> bits);
         void sortHand();
         int handScore(std::bitset<60> bits_hand, std::bitset<60> bits_values, std::bitset<15> bits_count);

@@ -4,30 +4,46 @@
 #include <iostream>
 #include <vector>
 
+#include "Rank.hpp"
+#include "Suit.hpp"
+
 template <std::size_t T>
-void debug_bitset(std::bitset<T> bits, std::string name) {
-    std::cout << "bitset<" << T << ">: " << name << std::endl;
+void print_bitset(std::bitset<T> bits) {
+    bool leading_zeros = true;
+
     for (std::size_t i = 0; i < bits.to_string().size(); i++) {
-        if (i % 4 == 0)
+        if (i % 4 == 0 && i != 0)
             std::cout << " ";
-        std::cout << bits.to_string()[i];
+        if (i < T - 1 && bits.to_string()[i] == '0' && bits.to_string()[i + 1] != '0')
+            std::cout << "0";
+        else
+            std::cout << bits.to_string()[i];
     }
     std::cout << std::endl;
-    std::cout << " ";
+
     for (std::size_t i = T / 4 - 1; i > 1; i--) {
         std::cout << "♣♠♦♥ ";
     }
     std::cout << std::endl;
-    std::cout << " ";
+
     for (std::size_t i = T / 4 - 1; i > 1; i--) {
-        std::cout << i;
-        if (i >= 10)
-            std::cout << "   ";
-        else
-            std::cout << "    ";
+        if (i < 10)
+            std::cout << i;
+        else if (i == 10)
+            std::cout << "T";
+        else if (i == 11)
+            std::cout << "J";
+        else if (i == 12)
+            std::cout << "Q";
+        else if (i == 13)
+            std::cout << "K";
+        else if (i == 14)
+            std::cout << "A";
+        std::cout << "    ";
     }
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl;
 }
+void print_player_hand(std::bitset<60> bits);
 
 template <std::size_t T>
 void pushRankToBitset(std::bitset<T> &bits, int rank) {
