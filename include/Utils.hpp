@@ -1,6 +1,10 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
+#define LENGTH_VALUES_BITSET 60
+#define LENGTH_COUNT_BITSET 15
+#define LENGTH_TIES_BITSET 20
+
 #include <iostream>
 #include <vector>
 
@@ -43,13 +47,25 @@ void print_bitset(std::bitset<T> bits) {
     }
     std::cout << std::endl;
 }
-void print_player_hand(std::bitset<60> bits);
+
+template <std::size_t T>
+void print_player_hand(std::bitset<T> bits) {
+    int suit = 0;
+    for (std::size_t i = 0; i < bits.size(); i++) {
+        if (bits[i] == 1) {
+            suit = i % 4;
+            std::cout << poker::rank_to_symbol_representation[(i - suit) / 4];
+            std::cout << poker::suit_to_symbol_representation[suit];
+        }
+    }
+    std::cout << std::endl;
+}
 
 template <std::size_t T>
 void pushRankToBitset(std::bitset<T> &bits, int rank) {
-    if (T == 15) {
+    if (T == LENGTH_COUNT_BITSET) {
         bits.set(rank);
-    } else if (T == 60) {
+    } else if (T == LENGTH_VALUES_BITSET) {
         for (std::size_t i = 0; i < 4; i++) {
             if (i + 1 >= 4 && bits[rank * 4 + i] == 1)
                 std::runtime_error("No more card of this rank");
@@ -64,9 +80,9 @@ void pushRankToBitset(std::bitset<T> &bits, int rank) {
 
 template <std::size_t T>
 void removeRankFromBitset(std::bitset<T> &bits, int rank) {
-    if (T == 15) {
+    if (T == LENGTH_COUNT_BITSET) {
         bits.remove(rank);
-    } else if (T == 60) {
+    } else if (T == LENGTH_VALUES_BITSET) {
         for (std::size_t i = 0; i < 4; i++) {
             if (i + 1 >= 4 && bits[rank * 4 + i] == 1)
                 std::runtime_error("No more card of this rank");

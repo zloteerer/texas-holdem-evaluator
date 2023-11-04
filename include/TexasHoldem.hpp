@@ -1,6 +1,10 @@
 #ifndef TEXASHOLDEM_HPP_
 #define TEXASHOLDEM_HPP_
 
+#define LENGTH_VALUES_BITSET 60
+#define LENGTH_COUNT_BITSET 15
+#define LENGTH_TIES_BITSET 20
+
 #include <iostream>
 #include <vector>
 
@@ -27,9 +31,9 @@ namespace poker {
 
             std::vector<Player> _players;
 
-            std::bitset<60> _deck;
-            std::bitset<60> _board;
-            std::bitset<15> _board_values;
+            std::bitset<LENGTH_VALUES_BITSET> _deck;
+            std::bitset<LENGTH_VALUES_BITSET> _board;
+            std::bitset<LENGTH_COUNT_BITSET> _board_values;
     };
 }
 

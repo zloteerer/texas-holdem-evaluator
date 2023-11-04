@@ -14,7 +14,14 @@ TexasHoldem::~TexasHoldem() {
 }
 
 void TexasHoldem::_usage() {
-    std::cout << "EDIT USAGE" << std::endl;
+    std::cout << "Usage: ./poker [options]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Options:" << std::endl;
+    std::cout << "  -b, --board <cards>  Specify the community cards on the board. Provide 3, 4, or 5 cards, e.g., -b 5h9djsqckh." << std::endl;
+    std::cout << "  -p, --player <cards> Specify the hole cards for players. Provide 2 cards per player with a maximum of 10 players, e.g., -p 2c3s." << std::endl;
+    std::cout << std::endl;
+    std::cout << "Example:" << std::endl;
+    std::cout << "  ./poker -b 3s9hkd -p 7cah" << std::endl;
 }
 
 int TexasHoldem::_read_rank(char rank) {
@@ -116,13 +123,11 @@ void TexasHoldem::play() {
 
     if (winner.size() == 1) {
         std::cout << winner.at(0).getName() << ": " << poker::hand_rank_to_representation[winner.at(0).getScore()] << std::endl;
-        print_bitset(winner.at(0).getBestHand());
         print_player_hand(winner.at(0).getBestHand());
     } else if (winner.size() > 1) {
         std::cout << "Tie!" << std::endl;
         for (const auto &player: winner) {
             std::cout << player.getName() << ": " << poker::hand_rank_to_representation[winner.at(0).getScore()] << std::endl;
-            print_bitset(player.getBestHand());
             print_player_hand(player.getBestHand());
         }
     }
@@ -130,10 +135,10 @@ void TexasHoldem::play() {
 
 std::vector<Player> TexasHoldem::winner() {
     std::vector<Player> winner;
-    std::bitset<60> hand;
-    std::bitset<60> bits_hand;
-    std::bitset<60> bits_values;
-    std::bitset<15> bits_count;
+    std::bitset<LENGTH_VALUES_BITSET> hand;
+    std::bitset<LENGTH_VALUES_BITSET> bits_hand;
+    std::bitset<LENGTH_VALUES_BITSET> bits_values;
+    std::bitset<LENGTH_COUNT_BITSET> bits_count;
     std::vector<int> values;
     int score = 0;
     int max = -1;

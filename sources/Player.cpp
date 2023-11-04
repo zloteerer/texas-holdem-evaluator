@@ -25,17 +25,17 @@ void Player::addCard(int rank, int suit) {
     pushRankToBitset(this->_hand_count, rank);
 }
 
-void Player::addBoard(std::bitset<60> bits) {
+void Player::addBoard(std::bitset<LENGTH_VALUES_BITSET> bits) {
     this->_hand = this->_hand | bits;
-    for (std::size_t i = 0; i < 60; i += 4)
+    for (std::size_t i = 0; i < bits.size(); i += 4)
         if (bits[i] == 1 || bits[i + 1] == 1 || bits[i + 2] == 1 || bits[i + 3] == 1)
             this->_hand_count.set(i / 4);
 }
 
 int Player::handScore(
-    std::bitset<60> bits_hand,
-    std::bitset<60> bits_values,
-    std::bitset<15> bits_count
+    std::bitset<LENGTH_VALUES_BITSET> bits_hand,
+    std::bitset<LENGTH_VALUES_BITSET> bits_values,
+    std::bitset<LENGTH_COUNT_BITSET> bits_count
 ) {
     int suit_value = -1;
     bool is_flush = true;
@@ -86,9 +86,9 @@ int Player::handScore(
     return bits_hand.to_ullong() % 15;
 }
 
-unsigned long Player::tiesScore(std::bitset<60> bits_values) {
+unsigned long Player::tiesScore(std::bitset<LENGTH_VALUES_BITSET> bits_values) {
     std::vector<int> cards;
-    std::bitset<20> result;
+    std::bitset<LENGTH_TIES_BITSET> result;
     std::bitset<4> value_bitset;
     int bit_position = 0;
 
@@ -112,15 +112,15 @@ std::string Player::getName() const {
     return this->_name;
 }
 
-std::bitset<60> Player::getHand() const {
+std::bitset<LENGTH_VALUES_BITSET> Player::getHand() const {
     return this->_hand;
 }
 
-std::bitset<15> Player::getHandCount() const {
+std::bitset<LENGTH_COUNT_BITSET> Player::getHandCount() const {
     return this->_hand_count;
 }
 
-std::bitset<60> Player::getBestHand() const {
+std::bitset<LENGTH_VALUES_BITSET> Player::getBestHand() const {
     return this->_best_hand;
 }
 
@@ -140,6 +140,6 @@ void Player::setTiesScore(int score) {
     this->_ties_score = score;
 }
 
-void Player::setBestHand(std::bitset<60> bits) {
+void Player::setBestHand(std::bitset<LENGTH_VALUES_BITSET> bits) {
     this->_best_hand = bits;
 }
